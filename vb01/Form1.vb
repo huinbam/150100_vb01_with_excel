@@ -1,10 +1,16 @@
 ﻿Imports Oracle.DataAccess.Client
+Imports vb01.GetBasedata
+Imports System.IO
+Imports System.Text
 
 Public Class Form1
     Public g_excel As Object
     Public g_excelsheet As Worksheet
     Public g_excelbook As Workbook
     'Public pos As Integer
+
+    Public g_basedata As New Basedata '오
+
     Private Sub Button1_Click(sender As Object, e As EventArgs) Handles Button1.Click
         Try
             g_excel = GetObject(, "Excel.Application")
@@ -467,7 +473,7 @@ Public Class Form1
                 End While
             Catch ex As Exception
                 Label1.Text = ex.Message.ToString()
-                TextBox1.Text = ex.Message.ToString()
+                TextBox1.Text += ex.Message.ToString()
             Finally
                 data_reader_count.Close()
             End Try
@@ -499,7 +505,7 @@ Public Class Form1
             sql_count = 0
         Catch ex As Exception
             Label1.Text = ex.Message.ToString()
-            TextBox1.Text = ex.Message.ToString()
+            TextBox1.Text += ex.Message.ToString()
         Finally
             conn.Dispose()
         End Try
@@ -915,6 +921,97 @@ Public Class Form1
         End Try
     End Sub
 
+    Private Sub Button14_Click(sender As Object, e As EventArgs) Handles Button14.Click
+        ''Basedata.SetBaseData()
+        'g_basedata.SetBaseData()
+        'For Each g_basedata.g_Layer_info In g_basedata.g_Layer_info
+        '    TextBox1.Text += "Select ?"
+        '    'TextBox1.Text += g_basedata.g_Layer_info(Name).ToString
+        '    'TextBox1.Text += g_basedata.GetLayerHGO2("A00_ROT_RODMANTCE")
+        '    'TextBox1.Text += Basedata.GetLayerHGO2("A00_ROT_RODMANTCE") '아ㅇㅋㅇㅋ
+        '    TextBox1.Text += vbCrLf
+        'Next g_basedata.g_Layer_info
+
+        TextBox1.Clear()
+        Dim oradb As String = "Data Source=(DESCRIPTION=" _
+   + "(ADDRESS_LIST=(ADDRESS=(PROTOCOL=TCP)(HOST=58.140.194.59)(PORT=1521)))" _
+   + "(CONNECT_DATA=(SERVER=DEDICATED)(SERVICE_NAME=ORCL)));" _
+   + "User Id=SYSTEM;Password=1234567;"
+        Dim conn As New OracleConnection(oradb)
+        Dim conn_layer_id As New OracleConnection(oradb)
+
+        Try
+            conn.Open() '연결
+            Dim sql_count As Integer = 0
+            Dim sql As String = "SELECT LAYERINFO_ID FROM TABLE_INFO_HGO GROUP BY LAYERINFO_ID"
+            Dim cmd As New OracleCommand(sql, conn)
+
+            cmd.CommandType = CommandType.Text
+            Dim data_reader_count As OracleDataReader = cmd.ExecuteReader()
+            Try
+                While data_reader_count.Read()
+                    sql_count = sql_count + 1
+                End While
+            Catch ex As Exception
+                Label1.Text += ex.Message.ToString()
+                TextBox1.Text += ex.Message.ToString()
+            Finally
+                data_reader_count.Close()
+            End Try
+
+            Dim data_reader As OracleDataReader = cmd.ExecuteReader()
+            Try
+                ProgressBar1.Minimum = 0
+                ProgressBar1.Maximum = sql_count
+                ProgressBar1.Value = 0
+
+                While data_reader.Read()
+                    Dim sql_field_names As String = ""
+
+                    Dim sql_field_nm As String = "select fieldinfo_name from table_info_hgo where layerinfo_id='" & data_reader.Item("layerinfo_id") & "'"
+                    Dim cmd_field_nm As New OracleCommand(sql_field_nm, conn)
+                    cmd_field_nm.CommandType = CommandType.Text
+                    Dim data_reader_field_nm As OracleDataReader = cmd_field_nm.ExecuteReader() ' vb.net
+                    Try
+                        While data_reader_field_nm.Read()
+                            sql_field_names += data_reader_field_nm("fieldinfo_name")
+                            sql_field_names += ", "
+                        End While
+                    Catch ex As Exception
+                        '.Text += ex.Message.ToString()
+                        TextBox1.Text += ex.Message.ToString()
+                    Finally
+                        data_reader_field_nm.Close()
+                    End Try
+                    Dim sql_output As String = "SELECT " & sql_field_names & "ASTEXT(G2_SPATIAL) SHAPE FROM " & data_reader.Item("LAYERINFO_ID") & " WHERE HGO_LAST_MOD_YMD > ?;"
+                    'TextBox1.Text += "SELECT " & sql_field_names & "ASTEXT(G2_SPATIAL) SHAPE FROM " & data_reader.Item("LAYERINFO_ID") & " WHERE HGO_LAST_MOD_YMD > ?;" & vbCrLf
+                    TextBox1.Text += sql_output & vbCrLf
+
+                    ''여기부터
+                    Dim SaveAs_filePath As String = "C:\RDB\" & data_reader.Item("LAYERINFO_ID") & ".sql"
+                    Dim fs As FileStream = File.Create(SaveAs_filePath)
+                    Dim info As Byte() = New UTF8Encoding(True).GetBytes(sql_output)
+                    fs.Write(info, 0, info.Length)
+                    fs.Close()
+                    ''여기까지
+
+                    ProgressBar1.Value += 1
+                    Label1.Text = "[" & ProgressBar1.Value & "/" & sql_count & "]"
+                End While
+            Catch ex As Exception
+                TextBox1.Text += ex.Message.ToString()
+            Finally
+                TextBox1.Text += "작업완료"
+                data_reader.Close()
+            End Try
+            sql_count = 0
+        Catch ex As Exception
+            TextBox1.Text += ex.Message.ToString()
+        Finally
+            conn.Dispose()
+        End Try
+    End Sub
+
     Private Sub Button4_MouseHover(sender As Object, e As EventArgs) Handles Button4.MouseHover
         Label_help.Text = "테이블정의서를 긁어서.. 보완필요"
     End Sub
@@ -922,7 +1019,7 @@ Public Class Form1
         Label_help.Text = ""
     End Sub
     Private Sub Button7_MouseHover(sender As Object, e As EventArgs) Handles Button7.MouseHover
-        Label_help.Text = "여러개의 서비스정의서의 J열을 긁어 취합하여 엑셀로 저장"
+        Label_help.Text = "여러개의 서비스정의서의 J열을 긁어 취합하여 엑셀로 저장. (C\RDB)"
     End Sub
     Private Sub Button7_MouseLeave(sender As Object, e As EventArgs) Handles Button7.MouseLeave
         Label_help.Text = ""
@@ -957,8 +1054,12 @@ Public Class Form1
     Private Sub Button12_MouseLeave(sender As Object, e As EventArgs) Handles Button12.MouseLeave
         Label_help.Text = ""
     End Sub
+    Private Sub Button14_MouseHover(sender As Object, e As EventArgs) Handles Button14.MouseHover
+        Label_help.Text = "오라클DB(TABLE_INFO_HGO:행정주제도)에 접속하여 쿼리 작성하여 *.sql파일로 각각 저장. (C\RDB)"
+    End Sub
 
-
-
+    Private Sub Button14_MouseLeave(sender As Object, e As EventArgs) Handles Button14.MouseLeave
+        Label_help.Text = ""
+    End Sub
 
 End Class

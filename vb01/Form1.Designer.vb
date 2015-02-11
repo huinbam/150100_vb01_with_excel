@@ -40,6 +40,7 @@ Partial Class Form1
         Me.Button11 = New System.Windows.Forms.Button()
         Me.Button12 = New System.Windows.Forms.Button()
         Me.Button13 = New System.Windows.Forms.Button()
+        Me.Button14 = New System.Windows.Forms.Button()
         Me.SuspendLayout()
         '
         'Button1
@@ -212,11 +213,22 @@ Partial Class Form1
         Me.Button13.Text = "PostGresql"
         Me.Button13.UseVisualStyleBackColor = True
         '
+        'Button14
+        '
+        Me.Button14.Font = New System.Drawing.Font("돋움", 8.0!)
+        Me.Button14.Location = New System.Drawing.Point(526, 13)
+        Me.Button14.Name = "Button14"
+        Me.Button14.Size = New System.Drawing.Size(80, 23)
+        Me.Button14.TabIndex = 18
+        Me.Button14.Text = "[GetHGO:Q]"
+        Me.Button14.UseVisualStyleBackColor = True
+        '
         'Form1
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(7.0!, 12.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
         Me.ClientSize = New System.Drawing.Size(875, 392)
+        Me.Controls.Add(Me.Button14)
         Me.Controls.Add(Me.Button13)
         Me.Controls.Add(Me.Button12)
         Me.Controls.Add(Me.Button11)
@@ -258,5 +270,6 @@ Partial Class Form1
     Friend WithEvents Button11 As System.Windows.Forms.Button
     Friend WithEvents Button12 As System.Windows.Forms.Button
     Friend WithEvents Button13 As System.Windows.Forms.Button
+    Friend WithEvents Button14 As System.Windows.Forms.Button
 
 End Class
